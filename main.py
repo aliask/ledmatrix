@@ -4,7 +4,9 @@
 import argparse
 import datetime
 import logging
+import signal
 import socket
+import systemd.daemon
 import time
 
 from ledmatrix import LEDMatrix
@@ -28,47 +30,58 @@ class LEDServer:
         else:
             return False
 
-    def __init__(self):
-        logging.basicConfig(format='%(asctime)s %(message)s', level=logging.INFO)
-        spinner = Spinner()
+    def __graceful_exit(self):
+        logging.info("Shutting down")
+        self.leds.clearScreen()
+        systemd.daemon.notify(systemd.daemon.Notification.STOPPING)
+        quit(0)
 
+    def handle_signal(self, signum, frame):
+        logging.info("Caught %s" % signal.Signals(signum).name)
+        self.__graceful_exit()
+
+    def __init__(self):
+        logging.basicConfig(level = logging.INFO)
         try:
-            leds = LEDMatrix()
+            self.leds = LEDMatrix()
         except:
             logging.error("Could not initialise LED Matrix - are you root?")
-            quit()
+            quit(1)
 
         try:
-            server = UDPServer(self.UDP_PORT, self.DATA_TIMEOUT_SEC)
+            self.server = UDPServer(self.UDP_PORT, self.DATA_TIMEOUT_SEC)
             logging.info("Started listening for LED Matrix data on udp://%s:%d" % (socket.gethostname(), self.UDP_PORT))
         except:
             logging.error("Could not open UDP socket")
-            quit()
+            quit(1)
 
         self.__reset_timer()
-        leds.loadImage("pattern.png")
+
+        signal.signal(signal.SIGTERM, self.handle_signal)
+        signal.signal(signal.SIGINT, self.handle_signal)
+        systemd.daemon.notify(systemd.daemon.Notification.READY)
+
+        try:
+            self.leds.loadImage("pattern.png")
+        except:
+            logging.warning("Couldn't load image")
+
         while True:
             try:
-                spinner.spin()
-
                 if(self.__has_data_stopped()):
                     logging.info("Stopped receiving data - putting display to sleep")
-                    leds.clearScreen()
+                    self.leds.clearScreen()
 
-                packet = server.getFrame(leds.MATRIX_WIDTH * leds.MATRIX_HEIGHT)
+                packet = self.server.getFrame(self.leds.MATRIX_WIDTH * self.leds.MATRIX_HEIGHT)
 
                 if(self.is_receiving is False):
                     logging.info("Receiving data from udp://%s:%s" % packet["addr"])
                     self.is_receiving = True
 
-                leds.parseFrame(*packet["frame"])
+                self.leds.parseFrame(*packet["frame"])
                 self.__reset_timer()
             except NoDataException:
                 pass
-            except KeyboardInterrupt:
-                logging.info("Caught keyboard interrupt, shutting down")
-                leds.clearScreen()
-                quit()
             except FrameException as e:
                 logging.error("Error while processing: %s" % e)
 
