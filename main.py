@@ -1,15 +1,14 @@
 #!/usr/bin/env python3
 # LEDMatrix Server CLI Application
 
-import time
-
 import argparse
 import datetime
-import socket
 import logging
+import socket
+import time
 
-from spinner import Spinner
 from ledmatrix import LEDMatrix
+from spinner import Spinner
 from udpserver import UDPServer, FrameException, NoDataException
 
 class LEDServer:

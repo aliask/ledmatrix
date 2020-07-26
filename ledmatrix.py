@@ -2,6 +2,7 @@
 # Interface to the LED Matrix
 
 import struct
+
 from rpi_ws281x import PixelStrip, Color
 import _rpi_ws281x as ws
 from PIL import Image
