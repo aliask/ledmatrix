@@ -35,6 +35,8 @@ class LEDMatrix:
             strip_type = self.LED_TYPE,
             gamma = gamma
         )
+
+    def self.run():
         self.strip.begin()
 
     def __gammaTable(self, gamma):

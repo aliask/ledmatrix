@@ -1,0 +1,76 @@
+freddy: send will test automation scripts w/docker
+
+will: get docker, mess around
+
+optimiztion trickz
+  can I use a dict?
+    o(n) -> o(1)
+
+move runtime out of initializer
+generic exception catchuing
+  never catch all exceptions
+name
+  what it does
+  what it produces
+  what it's for: purpose as function names
+  which context is the thing in?
+    def should_the_code_do_something
+snake case all the things
+project structure
+
+io stuff
+  random io notes
+    for misc input into class, am I calling library with correct methods and data
+    import microcontroller_lib as mc
+    ih = io_heavy_class(attr1, attr2, etc)
+    expect ih to call mc.function with(attr2_transformer, attr1 etc)
+    ext_lib
+    io_heavy_classes
+
+  IO thinking toolkit
+    io_heavy_part
+      how to test
+        when I call my method on this class, it should call
+          functional non io parts with blah()
+          or a library with blah
+      how to identify:
+        does it call an external library that has side-effects based on some static data
+      !takes data class instances as input, and calls library or fuctional compoent
+      !takes stubbed library call as input, and produces a data class instance
+      a bit hard to test
+
+    functional_non_io_parts ()
+      how to test
+        for input
+        expecet output
+      how to identify:
+        can you test it by feeding it input, and checking the output
+      !takes data class instances as input, and produces data class instances as output
+      very easy to test
+
+    data classes (models)
+      passed between functional parts or to and from io parts
+
+ledmatrix.py refactoring option
+    io
+        pixel_strip
+            initialize
+            send pixel_frame to strip
+        image_loader
+            load image from disk
+            pixel_frame_converter
+            test
+              pixel_frame_converter was called
+              OR
+              return image_bytes data object or byte array
+
+    data
+        pixel_frame
+    functional
+        image to pixel_frame_converter
+
+    code example
+        pixel_frame = image_loader.load()
+        pixel_frame = pixel_converter(img) 
+        pixel_strip.begin()
+        pixel_strip.show(pixel_frame)

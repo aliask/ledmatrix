@@ -19,51 +19,35 @@ class LEDServer:
     DATA_TIMEOUT_SEC = 0.5
     is_receiving = False
 
-    def __reset_timer(self):
-        self.nodata_timer = datetime.datetime.now() + datetime.timedelta(seconds = self.DATA_TIMEOUT_SEC)
-
-    def __has_data_stopped(self):
-        timedout = self.nodata_timer < datetime.datetime.now()
-        if(timedout and self.is_receiving):
-            self.is_receiving = False
-            return True
-        else:
-            return False
-
-    def __graceful_exit(self):
-        logging.info("Shutting down")
-        self.leds.clearScreen()
-        systemd.daemon.notify(systemd.daemon.Notification.STOPPING)
-        quit(0)
-
-    def handle_signal(self, signum, frame):
-        logging.info("Caught %s" % signal.Signals(signum).name)
-        self.__graceful_exit()
-
     def __init__(self):
+        self.leds = LEDMatrix()
+        self.server = UDPServer(self.UDP_PORT, self.DATA_TIMEOUT_SEC)
+
+    def run():
         logging.basicConfig(level = logging.INFO)
-        try:
-            self.leds = LEDMatrix()
-        except:
-            logging.error("Could not initialise LED Matrix - are you root?")
-            quit(1)
 
         try:
-            self.server = UDPServer(self.UDP_PORT, self.DATA_TIMEOUT_SEC)
+            leds.run()
+        except e: # try to narrow?
+            logging.error("Could not initialise LED Matrix - are you root?")
+            raise e
+
+        try:
+            server.run()
             logging.info("Started listening for LED Matrix data on udp://%s:%d" % (socket.gethostname(), self.UDP_PORT))
-        except:
+        except e: # try to narrow?
             logging.error("Could not open UDP socket")
-            quit(1)
+            raise e
 
         self.__reset_timer()
 
-        signal.signal(signal.SIGTERM, self.handle_signal)
-        signal.signal(signal.SIGINT, self.handle_signal)
+        signal.signal(signal.SIGTERM, self._handle_signal)
+        signal.signal(signal.SIGINT, self._handle_signal)
         systemd.daemon.notify(systemd.daemon.Notification.READY)
 
         try:
             self.leds.loadImage("pattern.png")
-        except:
+        except: # narrow exception
             logging.warning("Couldn't load image")
 
         while True:
@@ -84,7 +68,29 @@ class LEDServer:
                 pass
             except FrameException as e:
                 logging.error("Error while processing: %s" % e)
+        
+    
+    def _handle_signal(self, signum, frame):
+        logging.info("Caught %s" % signal.Signals(signum).name)
+        self.__graceful_exit()
 
+    def __reset_timer(self):
+        self.nodata_timer = datetime.datetime.now() + datetime.timedelta(seconds = self.DATA_TIMEOUT_SEC)
+
+    def __has_data_stopped(self):
+        timedout = self.nodata_timer < datetime.datetime.now()
+        if(timedout and self.is_receiving):
+            self.is_receiving = False
+            return True
+        else:
+            return False
+
+    def __graceful_exit(self):
+        logging.info("Shutting down")
+        self.leds.clearScreen()
+        systemd.daemon.notify(systemd.daemon.Notification.STOPPING)
+        quit(0)
 
 if __name__ == '__main__':
     app = LEDServer()
+    app.run()
