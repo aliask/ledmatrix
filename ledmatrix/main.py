@@ -13,10 +13,10 @@ import struct
 from itertools import zip_longest
 from rpi_ws281x import Color
 
-from .ledmatrix import LEDMatrix
-from .spinner import Spinner
-from .udpserver import UDPServer, FrameException, NoDataException
-from .ledframe import LedFrame
+from ledmatrix import LEDMatrix
+from spinner import Spinner
+from udpserver import UDPServer, FrameException, NoDataException
+from ledframe import LedFrame
 
 def grouper(n, iterable, fillvalue=None):
     "grouper(3, 'ABCDEFG', 'x') --> ABC DEF Gxx"
@@ -52,20 +52,23 @@ class LEDServer:
 
     def __init__(self):
         logging.basicConfig(level = logging.INFO)
+        self.leds = LEDMatrix()
+        self.server = UDPServer(self.UDP_PORT, self.DATA_TIMEOUT_SEC)
+        self.__reset_timer()
+
+    def run(self):
         try:
-            self.leds = LEDMatrix()
+            self.leds.begin()
         except:
             logging.error("Could not initialise LED Matrix - are you root?")
             quit(1)
 
         try:
-            self.server = UDPServer(self.UDP_PORT, self.DATA_TIMEOUT_SEC)
+            self.server.start()
             logging.info("Started listening for LED Matrix data on udp://%s:%d" % (socket.gethostname(), self.UDP_PORT))
         except:
             logging.error("Could not open UDP socket")
             quit(1)
-
-        self.__reset_timer()
 
         signal.signal(signal.SIGTERM, self.handle_signal)
         signal.signal(signal.SIGINT, self.handle_signal)
@@ -109,3 +112,4 @@ class LEDServer:
 
 if __name__ == '__main__':
     app = LEDServer()
+    app.run()
