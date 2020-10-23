@@ -5,7 +5,7 @@ from rpi_ws281x import PixelStrip, Color
 import _rpi_ws281x as ws
 from PIL import Image
 
-from ledframe import LedFrame
+from .ledframe import LedFrame
 
 class LEDMatrix:
 

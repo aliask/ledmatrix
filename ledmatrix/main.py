@@ -13,10 +13,10 @@ import struct
 from itertools import zip_longest
 from rpi_ws281x import Color
 
-from ledmatrix import LEDMatrix
-from spinner import Spinner
-from udpserver import UDPServer, FrameException, NoDataException
-from ledframe import LedFrame
+from .ledmatrix import LEDMatrix
+from .spinner import Spinner
+from .udpserver import UDPServer, FrameException, NoDataException
+from .ledframe import LedFrame
 
 def grouper(n, iterable, fillvalue=None):
     "grouper(3, 'ABCDEFG', 'x') --> ABC DEF Gxx"
