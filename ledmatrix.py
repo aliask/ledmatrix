@@ -54,7 +54,7 @@ class LEDMatrix:
         image_frame = LedFrame(img.height, img.width)
         for y in range(img.height):
             for x in range(img.width):
-                pixel = img.getpixel((x,y))
+                pixel = img.getpixel((x,img.height - y - 1))
                 image_frame.pixels.append(Color(*pixel))
         return image_frame
 
@@ -65,7 +65,7 @@ class LEDMatrix:
         for y in range(self.MATRIX_HEIGHT):
             for x in range(self.MATRIX_WIDTH):
                 matrix_y = y
-                if x%2:
+                if not x%2:
                     matrix_y = self.MATRIX_HEIGHT - y - 1
                 self.strip.setPixelColor(matrix_y + x * self.MATRIX_HEIGHT, frame.pixels[frame.width*y+x])
         self.strip.show()
