@@ -17,9 +17,13 @@ class UDPServer:
     FRAME_PIXEL_SIZE = 4
 
     def __init__(self, port, timeout):
+        self.port = port
+        self.timeout = timeout
+
+    def start(self):
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        self.sock.bind((self.ALL_IFACES, port))
-        self.sock.settimeout(timeout)
+        self.sock.bind((self.ALL_IFACES, self.port))
+        self.sock.settimeout(self.timeout)
 
     def __empty_socket(self):
         input = [self.sock]

@@ -5,7 +5,7 @@ from rpi_ws281x import PixelStrip, Color
 import _rpi_ws281x as ws
 from PIL import Image
 
-from .ledframe import LedFrame
+from ledframe import LedFrame
 
 class LEDMatrix:
 
@@ -35,6 +35,8 @@ class LEDMatrix:
             strip_type = self.LED_TYPE,
             gamma = gamma
         )
+
+    def begin(self):
         self.strip.begin()
 
     def __gammaTable(self, gamma):
