@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 # Interface to the LED Matrix
 
-import struct
-
 from rpi_ws281x import PixelStrip, Color
 import _rpi_ws281x as ws
 from PIL import Image
+
+from ledframe import LedFrame
 
 class LEDMatrix:
 
@@ -43,38 +43,29 @@ class LEDMatrix:
             table.append(int((pow(i/255, gamma) * 255 + 0.5)))
         return table
 
-    def clearScreen(self):
+    def clearScreen(self) -> None:
         for i in range(self.strip.numPixels()):
             self.strip.setPixelColor(i, 0)
         self.strip.show()
 
-    def loadImage(self, file):
+    def loadImage(self, file: str) -> LedFrame:
         img = Image.open(file).convert("RGB")
         img.load()
-        for x in range(img.width):
-            for y in range(img.height):
-                pixel = img.getpixel((x,y))
-                matrix_x = x
-                matrix_y = y
-                if x%2:
-                    matrix_y = self.MATRIX_HEIGHT - y - 1
-                self.strip.setPixelColor(matrix_y + matrix_x * self.MATRIX_HEIGHT, Color(*pixel))
-        self.strip.show()
+        image_frame = LedFrame(img.height, img.width)
+        for y in range(img.height):
+            for x in range(img.width):
+                pixel = img.getpixel((x,img.height - y - 1))
+                image_frame.pixels.append(Color(*pixel))
+        return image_frame
 
-    def __displayFrame(self, pixels):
+    def displayFrame(self, frame: LedFrame) -> None:
+        if(frame.height != self.MATRIX_HEIGHT or frame.width != self.MATRIX_WIDTH):
+            raise Exception("Frame is for %i x %i Matrix but we have %i x %i" % 
+                (frame.width, frame.height, self.MATRIX_WIDTH, self.MATRIX_HEIGHT))
         for y in range(self.MATRIX_HEIGHT):
             for x in range(self.MATRIX_WIDTH):
-                pixel = struct.unpack("BBB", pixels[0:3])   # Extract the first 3 bytes (R,G,B) and ignore A
-                del pixels[0:4]                             # Trim the pixels array
-                matrix_x = x
                 matrix_y = y
                 if not x%2:
                     matrix_y = self.MATRIX_HEIGHT - y - 1
-                self.strip.setPixelColor(matrix_y + matrix_x * self.MATRIX_HEIGHT, Color(*pixel))
+                self.strip.setPixelColor(matrix_y + x * self.MATRIX_HEIGHT, frame.pixels[frame.width*y+x])
         self.strip.show()
-
-    def parseFrame(self, height, width, pixels):
-        if(height != self.MATRIX_HEIGHT or width != self.MATRIX_WIDTH):
-            raise Exception("Frame is for %i x %i Matrix but we have %i x %i" % 
-                (width, height, self.MATRIX_WIDTH, self.MATRIX_HEIGHT))
-        self.__displayFrame(pixels)

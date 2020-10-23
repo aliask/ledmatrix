@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # Listener for Frame Data
 
-import socket, struct, select
+import logging, socket, struct, select
 
 class FrameException(Exception):
     pass
@@ -30,10 +30,17 @@ class UDPServer:
 
     def getFrame(self, num_pixels):
         num_bytes = num_pixels * self.FRAME_PIXEL_SIZE + self.FRAME_HEADER_SIZE
+        logging.debug("Emptying socking before RX")
         self.__empty_socket()
         try:
+            logging.debug("Waiting for new packet")
             data, addr = self.sock.recvfrom(num_bytes)
-            addr = socket.getnameinfo(addr, 0)
+
+            try:
+                addr = socket.getnameinfo(addr, 0)
+            except socket.gaierror:
+                logging.warn("Error during hostname lookup for %s" % addr[0])
+
             (ident, height, width, length) = struct.unpack("HHHH", data[0:8])
             if(ident != self.FRAME_IDENT):
                 raise FrameException("Wrong frame ident received (got 0x%x)" % ident)
