@@ -8,10 +8,20 @@ import signal
 import socket
 import systemd.daemon
 import time
+import struct
+
+from itertools import zip_longest
+from rpi_ws281x import Color
 
 from ledmatrix import LEDMatrix
 from spinner import Spinner
 from udpserver import UDPServer, FrameException, NoDataException
+from ledframe import LedFrame
+
+def grouper(n, iterable, fillvalue=None):
+    "grouper(3, 'ABCDEFG', 'x') --> ABC DEF Gxx"
+    args = [iter(iterable)] * n
+    return zip_longest(fillvalue=fillvalue, *args)
 
 class LEDServer:
 
@@ -62,7 +72,8 @@ class LEDServer:
         systemd.daemon.notify(systemd.daemon.Notification.READY)
 
         try:
-            self.leds.loadImage("pattern.png")
+            image = self.leds.loadImage("pattern.png")
+            self.leds.displayFrame(image)
         except:
             logging.warning("Couldn't load image")
 
@@ -72,13 +83,23 @@ class LEDServer:
                     logging.info("Stopped receiving data - putting display to sleep")
                     self.leds.clearScreen()
 
-                packet = self.server.getFrame(self.leds.MATRIX_WIDTH * self.leds.MATRIX_HEIGHT)
+                frame_pixels = self.leds.MATRIX_WIDTH * self.leds.MATRIX_HEIGHT
+                packet = self.server.getFrame(frame_pixels)
+
+                logging.debug("Received packet")
 
                 if(self.is_receiving is False):
                     logging.info("Receiving data from udp://%s:%s" % packet["addr"])
                     self.is_receiving = True
 
-                self.leds.parseFrame(*packet["frame"])
+                # Take received packet and format for LED panel
+                (height,width,pixels) = packet["frame"]
+                frame = LedFrame(height,width)
+                for pixel in grouper(4, list(struct.unpack('B'*frame_pixels*4, pixels))):
+                    (r,g,b,a) = pixel
+                    frame.pixels.append(Color(r,g,b))
+
+                self.leds.displayFrame(frame)
                 self.__reset_timer()
             except NoDataException:
                 pass
