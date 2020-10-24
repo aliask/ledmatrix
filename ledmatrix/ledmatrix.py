@@ -5,7 +5,7 @@ from rpi_ws281x import PixelStrip, Color
 import _rpi_ws281x as ws
 from PIL import Image
 
-from ledframe import LedFrame
+from ledmatrix.ledframe import LedFrame
 
 class LEDMatrix:
 
@@ -50,7 +50,8 @@ class LEDMatrix:
             self.strip.setPixelColor(i, 0)
         self.strip.show()
 
-    def loadImage(self, file: str) -> LedFrame:
+    @staticmethod
+    def loadImage(file: str) -> LedFrame:
         img = Image.open(file).convert("RGB")
         img.load()
         image_frame = LedFrame(img.height, img.width)

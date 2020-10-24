@@ -1,16 +1,24 @@
 import unittest
 
-import sys, os
-testdir = os.path.dirname(__file__)
-srcdir = '../ledmatrix'
-sys.path.insert(0, os.path.abspath(os.path.join(testdir, srcdir)))
-
-from ledmatrix import LEDMatrix
+from ledmatrix import LEDMatrix, LedFrame
 
 class TestImage(unittest.TestCase):
 
-  def test_read_image_to_frame(self):
-    self.assertEqual(1, 1, "OK")
+  def setUp(self):
+    self.image_frame = LEDMatrix.loadImage('pattern.png')
+
+  def test_read_image_is_frame(self):
+    self.assertIsInstance(self.image_frame, LedFrame, "Failed to decode image - wrong type returned")
+
+  def test_read_image_height(self):
+    self.assertEqual(self.image_frame.height, 16, "Failed to decode image - wrong height read")
+
+  def test_read_image_width(self):
+    self.assertEqual(self.image_frame.width, 32, "Failed to decode image - wrong width read")
+
+  def test_read_image_pixels(self):
+    pixel_hash = hash(tuple(self.image_frame.pixels))
+    self.assertEqual(pixel_hash, 758414819, "Failed to decode image - pixel data mismatch")
 
 if __name__ == '__main__':
     unittest.main()
