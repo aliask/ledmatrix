@@ -75,7 +75,12 @@ class LEDServer:
                     logging.info("Receiving data from udp://%s:%s" % packet["addr"])
                     self.is_receiving = True
 
-                leds.parseFrame(*packet["frame"])
+                if(packet['type'] == "frame"):
+                    leds.parseFrame(*packet["frame"])
+                elif(packet['type'] == "command" and packet['command'] == "brightness"):
+                    logging.info("Setting brightness to %d" % packet['value'])
+                    leds.setBrightness(packet['value'])
+
                 self.__reset_timer()
             except NoDataException:
                 pass

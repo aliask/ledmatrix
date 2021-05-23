@@ -81,3 +81,6 @@ class LEDMatrix:
             raise Exception("Frame is for %i x %i Matrix but we have %i x %i" % 
                 (width, height, self.MATRIX_WIDTH, self.MATRIX_HEIGHT))
         self.__displayFrame(pixels)
+
+    def setBrightness(self, brightness):
+        self.strip.setBrightness(brightness)
