@@ -20,8 +20,12 @@ class LEDMatrix:
     LED_TYPE = ws.WS2811_STRIP_GRB   # Pixel color ordering
     LED_GAMMA = 1.5                  # Brightness adjustment onto exponential curve
 
-    def __init__(self):
+    def __init__(self, brightness = 30, height = 16, width = 32):
         gamma = self.__gammaTable(self.LED_GAMMA)
+
+        self.LED_BRIGHTNESS = brightness
+        self.MATRIX_HEIGHT = height
+        self.MATRIX_WIDTH = width
 
         self.strip = PixelStrip(
             num = self.MATRIX_HEIGHT * self.MATRIX_WIDTH,

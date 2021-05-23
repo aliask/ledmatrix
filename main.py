@@ -1,12 +1,10 @@
 #!/usr/bin/env python3
 # LEDMatrix Server CLI Application
 
-import time
-
-import argparse
 import datetime
 import socket
 import logging
+import yaml
 
 from spinner import Spinner
 from ledmatrix import LEDMatrix
@@ -14,12 +12,18 @@ from udpserver import UDPServer, FrameException, NoDataException
 
 class LEDServer:
 
-    UDP_PORT = 20304
-    DATA_TIMEOUT_SEC = 0.5
     is_receiving = False
+    config = {
+        'brightness': 30,
+        'height': 16,
+        'width': 32,
+        'udp_port': 20304,
+        'data_timeout': 0.5,
+        'startupImage': '/usr/share/ledserver/pattern.png'
+    }
 
     def __reset_timer(self):
-        self.nodata_timer = datetime.datetime.now() + datetime.timedelta(seconds = self.DATA_TIMEOUT_SEC)
+        self.nodata_timer = datetime.datetime.now() + datetime.timedelta(seconds = self.config['data_timeout'])
 
     def __has_data_stopped(self):
         timedout = self.nodata_timer < datetime.datetime.now()
@@ -34,20 +38,29 @@ class LEDServer:
         spinner = Spinner()
 
         try:
-            leds = LEDMatrix()
+            self.config = { **self.config, **yaml.safe_load(open("/etc/ledserver.yml")) }
+        except:
+            logging.warning("Could not read config file, using defaults")
+
+        try:
+            leds = LEDMatrix(
+                brightness = self.config['brightness'],
+                height = self.config['height'],
+                width = self.config['width']
+            )
         except:
             logging.error("Could not initialise LED Matrix - are you root?")
             quit()
 
         try:
-            server = UDPServer(self.UDP_PORT, self.DATA_TIMEOUT_SEC)
-            logging.info("Started listening for LED Matrix data on udp://%s:%d" % (socket.gethostname(), self.UDP_PORT))
+            server = UDPServer(self.config['udp_port'], self.config['data_timeout'])
+            logging.info("Started listening for LED Matrix data on udp://%s:%d" % (socket.gethostname(), self.config['udp_port']))
         except:
             logging.error("Could not open UDP socket")
             quit()
 
         self.__reset_timer()
-        leds.loadImage("pattern.png")
+        leds.loadImage(self.config['startupImage'])
         while True:
             try:
                 spinner.spin()

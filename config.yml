@@ -1,0 +1,10 @@
+# LED Panel Settings
+brightness: 30
+height: 16
+width: 32
+
+# Server Settings
+udp_port: 20304
+data_timeout: 0.5 # seconds
+
+startupImage: '/usr/share/ledserver/pattern.png'
