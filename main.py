@@ -1,6 +1,12 @@
 #!/usr/bin/env python3
 # LEDMatrix Server CLI Application
 
+# Activate the virtual environment inside Python to allow simple execution
+import os
+base_dir = os.path.dirname(os.path.realpath(os.path.expanduser(__file__)))
+activate_this = os.path.join(base_dir, 'venv/bin/activate_this.py')
+exec(open(activate_this).read())
+
 import argparse
 import datetime
 import logging
@@ -72,7 +78,7 @@ class LEDServer:
         systemd.daemon.notify(systemd.daemon.Notification.READY)
 
         try:
-            image = self.leds.loadImage("pattern.png")
+            image = self.leds.loadImage(os.path.join(base_dir, 'pattern.png'))
             self.leds.displayFrame(image)
         except:
             logging.warning("Couldn't load image")

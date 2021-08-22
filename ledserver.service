@@ -1,5 +1,6 @@
 [Unit]
 Description=LED Matrix Server
+After=network-online.target
 
 [Service]
 ExecStart=/usr/local/bin/ledserver
