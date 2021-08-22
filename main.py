@@ -98,15 +98,21 @@ class LEDServer:
                     logging.info("Receiving data from udp://%s:%s" % packet["addr"])
                     self.is_receiving = True
 
-                # Take received packet and format for LED panel
-                (height,width,pixels) = packet["frame"]
-                frame = LedFrame(height,width)
-                for pixel in grouper(4, list(struct.unpack('B'*frame_pixels*4, pixels))):
-                    (r,g,b,a) = pixel
-                    frame.pixels.append(Color(r,g,b))
+                if(packet['type'] == "frame"):
+                    # Take received packet and format for LED panel
+                    (height,width,pixels) = packet["frame"]
+                    frame = LedFrame(height,width)
+                    for pixel in grouper(4, list(struct.unpack('B'*frame_pixels*4, pixels))):
+                        (r,g,b,a) = pixel
+                        frame.pixels.append(Color(r,g,b))
 
-                self.leds.displayFrame(frame)
+                    self.leds.displayFrame(frame)
+                elif(packet['type'] == "command" and packet['command'] == "brightness"):
+                    logging.info("Setting brightness to %d" % packet['value'])
+                    self.leds.setBrightness(packet['value'])
+
                 self.__reset_timer()
+
             except NoDataException:
                 pass
             except FrameException as e:

@@ -2,6 +2,7 @@
 # Listener for Frame Data
 
 import logging, socket, struct, select
+from enum import Enum
 
 class FrameException(Exception):
     pass
@@ -9,10 +10,14 @@ class FrameException(Exception):
 class NoDataException(Exception):
     pass
 
+class Commands(Enum):
+    SetBrightness = 0
+
 class UDPServer:
 
     ALL_IFACES = "0.0.0.0"
     FRAME_IDENT = 0x1234
+    COMMAND_IDENT = 0x4321
     FRAME_HEADER_SIZE = 8
     FRAME_PIXEL_SIZE = 4
 
@@ -45,6 +50,25 @@ class UDPServer:
             except socket.gaierror:
                 logging.warn("Error during hostname lookup for %s" % addr[0])
 
+            # Command packet
+            if(len(data) == 4):
+                (ident, command, value) = struct.unpack("HBB", data)
+
+                if(ident != self.COMMAND_IDENT):
+                    raise FrameException("Wrong command ident received (got 0x%x)" % ident)
+
+                if(command == Commands.SetBrightness.value):
+                    packet = {
+                        "type": "command",
+                        "addr": addr,
+                        "command": "brightness",
+                        "value": value
+                    }
+                    return packet
+                else:
+                    raise FrameException("Unknown command received: 0x%x" % command)
+
+            # Frame packet
             (ident, height, width, length) = struct.unpack("HHHH", data[0:8])
             if(ident != self.FRAME_IDENT):
                 raise FrameException("Wrong frame ident received (got 0x%x)" % ident)
@@ -53,7 +77,8 @@ class UDPServer:
                 raise FrameException("Header says %i pixel bytes, but got %i" % (length, len(pixels)))
             if(length != num_pixels * self.FRAME_PIXEL_SIZE):
                 raise FrameException("Not enough data in the packet to make a frame")
-            packet = { 
+            packet = {
+                "type": "frame",
                 "addr": addr, 
                 "frame": (height, width, pixels)
             }
