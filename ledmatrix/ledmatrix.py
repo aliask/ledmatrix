@@ -39,6 +39,9 @@ class LEDMatrix:
     def begin(self):
         self.strip.begin()
 
+    def setBrightness(self, brightness):
+        self.strip.setBrightness(brightness)
+
     def __gammaTable(self, gamma):
         table = []
         for i in range(256):
