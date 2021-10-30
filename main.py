@@ -1,19 +1,11 @@
 #!/usr/bin/env python3
 # LEDMatrix Server CLI Application
 
-# Activate the virtual environment inside Python to allow simple execution
 import os
-base_dir = os.path.dirname(os.path.realpath(os.path.expanduser(__file__)))
-activate_this = os.path.join(base_dir, 'venv/bin/activate_this.py')
-exec(open(activate_this).read())
-
-import argparse
 import datetime
 import logging
 import signal
 import socket
-import systemd.daemon
-import time
 import struct
 
 from itertools import zip_longest
@@ -28,9 +20,9 @@ def grouper(n, iterable, fillvalue=None):
 
 class LEDServer:
 
-    UDP_PORT = 20304
-    DATA_TIMEOUT_SEC = 0.5
-    is_receiving = False
+    UDP_PORT = int(os.environ.get('LEDSERVER_PORT', 20304))
+    DATA_TIMEOUT_SEC = 2
+    is_receiving = True
 
     def __reset_timer(self):
         self.nodata_timer = datetime.datetime.now() + datetime.timedelta(seconds = self.DATA_TIMEOUT_SEC)
@@ -46,7 +38,6 @@ class LEDServer:
     def __graceful_exit(self):
         logging.info("Shutting down")
         self.leds.clearScreen()
-        systemd.daemon.notify(systemd.daemon.Notification.STOPPING)
         quit(0)
 
     def handle_signal(self, signum, frame):
@@ -75,10 +66,9 @@ class LEDServer:
 
         signal.signal(signal.SIGTERM, self.handle_signal)
         signal.signal(signal.SIGINT, self.handle_signal)
-        systemd.daemon.notify(systemd.daemon.Notification.READY)
 
         try:
-            image = self.leds.loadImage(os.path.join(base_dir, 'pattern.png'))
+            image = self.leds.loadImage('/app/pattern.png')
             self.leds.displayFrame(image)
         except:
             logging.warning("Couldn't load image")
