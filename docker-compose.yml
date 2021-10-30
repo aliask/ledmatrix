@@ -1,7 +1,9 @@
 version: "3"
 services:
   ledserver:
-    build: .
+    build: 
+      context: .
+      target: prod
     restart: unless-stopped
     network_mode: host
     # environment:
@@ -13,3 +15,9 @@ services:
       - "/dev/vcio:/dev/vcio"
     #  - "/dev/gpiomem:/dev/gpiomem"        # Uncomment if using SPI
     #  - "/dev/spidev0.0:/dev/spidev0.0"    # Uncomment if using SPI
+  
+  test:
+    build: 
+      context: .
+      target: test
+    profiles: ["test"]
