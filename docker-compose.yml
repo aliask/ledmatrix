@@ -1,0 +1,15 @@
+version: "3"
+services:
+  ledserver:
+    build: .
+    restart: unless-stopped
+    network_mode: host
+    # environment:
+    #   - "LEDSERVER_PORT=20304"
+    cap_add:
+      - SYS_RAWIO
+    devices:
+      - "/dev/mem:/dev/mem"
+      - "/dev/vcio:/dev/vcio"
+    #  - "/dev/gpiomem:/dev/gpiomem"        # Uncomment if using SPI
+    #  - "/dev/spidev0.0:/dev/spidev0.0"    # Uncomment if using SPI
