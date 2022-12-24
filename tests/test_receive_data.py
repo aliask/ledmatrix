@@ -52,7 +52,7 @@ class TestReceiveData(unittest.TestCase):
   @mock.patch.object(socket, 'getnameinfo')
   def test_get_image_frame(self, mock_getnameinfo, mock_sock, mock_select):
     fake_source = ('1.1.1.1', 12345)
-    socket.socket().recvfrom.returnvalue = (TEST_IMAGE_FRAME, fake_source)
+    socket.socket().recvfrom.return_value = (TEST_IMAGE_FRAME, fake_source)
     mock_getnameinfo.return_value = fake_source
     mock_select.return_value = ([], 0, 0)
 

@@ -20,4 +20,6 @@ services:
     build: 
       context: .
       target: test
+    volumes:
+      - .:/app
     profiles: ["test"]

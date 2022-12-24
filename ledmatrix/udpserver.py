@@ -17,22 +17,23 @@ class Commands(Enum):
 
 @dataclass
 class NetworkFrame:
-    source: Any = field(default=None, init=False)
+    source: tuple = field(default_factory=tuple,init=False)
+
 
 @dataclass
 class CommandFrame(NetworkFrame):
-    IDENT = 0x4321
-
     command: Commands
     value: int
+    IDENT = 0x4321
+
 
 @dataclass
 class ImageFrame(NetworkFrame):
-    IDENT = 0x1234
-
     pixels: bytearray
     height: int
     width: int
+    IDENT = 0x1234
+
 
 class UDPServer:
 
