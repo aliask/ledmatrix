@@ -1,4 +1,4 @@
-FROM python:alpine as base
+FROM python:3.10-alpine as base
 
 # Install Build dependencies for rpi_ws281x and Pillow
 RUN apk --no-cache add python3-dev gcc libc-dev \
@@ -21,7 +21,7 @@ COPY test-requirements.txt /app
 RUN pip3 install -r test-requirements.txt
 
 COPY tests /app/tests
-RUN [ "pytest", "tests" ]
+CMD [ "pytest", "tests" ]
 
 FROM base AS prod
 CMD [ "python3", "main.py" ]

@@ -6,18 +6,10 @@ import datetime
 import logging
 import signal
 import socket
-import struct
-
-from itertools import zip_longest
-from rpi_ws281x import Color
 
 from ledmatrix import *
 
 
-def grouper(n, iterable, fillvalue=None):
-    "grouper(3, 'ABCDEFG', 'x') --> ABC DEF Gxx"
-    args = [iter(iterable)] * n
-    return zip_longest(fillvalue=fillvalue, *args)
 
 
 class LEDServer:
@@ -91,28 +83,23 @@ class LEDServer:
                     self.leds.clearScreen()
 
                 frame_pixels = self.leds.MATRIX_WIDTH * self.leds.MATRIX_HEIGHT
-                packet = self.server.getFrame(frame_pixels)
+                network_frame = self.server.get_frame(frame_pixels)
 
                 logging.debug("Received packet")
 
                 if self.is_receiving is False:
-                    logging.info("Receiving data from udp://%s:%s" % packet["addr"])
+                    logging.info("Receiving data from udp://%s:%s" % network_frame.source)
                     self.is_receiving = True
 
-                if packet["type"] == "frame":
+                if type(network_frame) is ImageFrame:
                     # Take received packet and format for LED panel
-                    (height, width, pixels) = packet["frame"]
-                    frame = LedFrame(height, width)
-                    for pixel in grouper(
-                        4, list(struct.unpack("B" * frame_pixels * 4, pixels))
-                    ):
-                        (r, g, b, a) = pixel
-                        frame.pixels.append(Color(r, g, b))
-
+                    frame = LedFrame(network_frame.height, network_frame.width)
+                    frame.fill_from_bytearray(network_frame.pixels)
                     self.leds.displayFrame(frame)
-                elif packet["type"] == "command" and packet["command"] == "brightness":
-                    logging.info("Setting brightness to %d" % packet["value"])
-                    self.leds.setBrightness(packet["value"])
+                elif type(network_frame) is CommandFrame and \
+                        network_frame.command == Commands.SetBrightness:
+                    logging.info("Setting brightness to %d" % network_frame.value)
+                    self.leds.setBrightness(network_frame.value)
 
                 self.__reset_timer()
 
