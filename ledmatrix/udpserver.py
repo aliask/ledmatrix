@@ -6,14 +6,19 @@ from enum import Enum
 from dataclasses import dataclass, field
 from typing import Any
 
+
 class FrameException(Exception):
     pass
+
 
 class NoDataException(Exception):
     pass
 
+
 class Commands(Enum):
     SetBrightness = 0
+    SetPriority = 1
+
 
 @dataclass
 class NetworkFrame:
@@ -53,26 +58,28 @@ class UDPServer:
     def __empty_socket(self) -> None:
         input = [self.sock]
         while 1:
-            inputready, o, e = select.select(input,[],[], 0.0)
-            if len(inputready)==0: break
-            for s in inputready: s.recv(1)
+            inputready, o, e = select.select(input, [], [], 0.0)
+            if len(inputready) == 0:
+                break
+            for s in inputready:
+                s.recv(1)
 
     def __parse_command(self, data) -> CommandFrame:
         (command, value) = struct.unpack("BB", data)
 
-        if(command == Commands.SetBrightness.value):
-            return CommandFrame(command=Commands.SetBrightness, value=value)
-        else:
-            raise FrameException("Unknown command received: 0x%x" % command)
+        try:
+            return CommandFrame(command=Commands(command), value=value)
+        except ValueError as e:
+            raise FrameException("Unknown command received: 0x%x" % command, e)
 
     def __parse_image(self, data, num_pixels) -> ImageFrame:
         (height, width, length) = struct.unpack("HHH", data[0:6])
         pixels = bytearray(data[6:])
 
-        if(length != len(pixels)):
+        if length != len(pixels):
             raise FrameException("Header says %i pixel bytes, but got %i" % (length, len(pixels)))
 
-        if(length != num_pixels * self.FRAME_PIXEL_SIZE):
+        if length != num_pixels * self.FRAME_PIXEL_SIZE:
             raise FrameException("Not enough data in the packet to make a frame")
 
         return ImageFrame(height=height, width=width, pixels=pixels)
@@ -91,9 +98,9 @@ class UDPServer:
                 logging.warn("Error during hostname lookup for %s" % addr[0])
 
             frame_type = struct.unpack("H", data[0:2])[0]
-            if(frame_type == CommandFrame.IDENT):
+            if frame_type == CommandFrame.IDENT:
                 parsed = self.__parse_command(data[2:])
-            elif(frame_type == ImageFrame.IDENT):
+            elif frame_type == ImageFrame.IDENT:
                 parsed = self.__parse_image(data[2:], num_pixels)
             else:
                 raise FrameException("Unknown frame identity: 0x%x" % frame_type)
