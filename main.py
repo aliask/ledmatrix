@@ -12,7 +12,7 @@ from ledmatrix import *
 class LEDServer:
 
     UDP_PORT = int(os.environ.get("LEDSERVER_PORT", 20304))
-    DATA_TIMEOUT_SEC = 2
+    DATA_TIMEOUT_SEC = 3
 
     def __graceful_exit(self):
         logging.info("Shutting down")

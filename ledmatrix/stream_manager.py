@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import datetime
 import logging
 from typing import List
@@ -17,7 +17,7 @@ from ledmatrix.udpserver import (
 
 
 DEFAULT_PRIORITY = 5
-DATA_TIMEOUT_SEC = 2
+DATA_TIMEOUT_SEC = 3
 
 
 @dataclass
@@ -26,7 +26,7 @@ class Stream:
     priority: int
     last_packet: datetime.datetime
     is_active: bool
-    buffer: List[NetworkFrame]
+    buffer: List[NetworkFrame] = field(repr=False, default_factory=list)
 
 
 class StreamManager:
@@ -40,20 +40,19 @@ class StreamManager:
         self.leds = leds
 
     def __ingest_frame(self, frame: NetworkFrame) -> None:
-        # Add frame to buffer if found in existing streams
+        """Add frame to buffer if found in existing streams"""
+        logging.debug(f"__ingest_frame(frame={frame})")
         for stream in self.streams:
-            if stream.client == frame.source:
-                if type(frame) is CommandFrame and frame.command == Commands.SetPriority:
-                    stream.priority = frame.value
-                if stream.is_active:
-                    stream.buffer.append(frame)
-                    stream.last_packet = datetime.datetime.now()
+            if stream.client == frame.source[0]:
+                logging.debug(f"[Stream {stream.client}] Adding frame to buffer)")
+                stream.buffer.append(frame)
+                stream.last_packet = datetime.datetime.now()
                 return
 
         # Not found, create new stream for this client
-        logging.debug("Received packet from new stream udp://%s:%s" % frame.source)
+        logging.info(f"[Stream {frame.source[0]}] Received frame from new source - udp://{frame.source[0]}:{frame.source[1]}")
         new_stream = Stream(
-            client=frame.source,
+            client=frame.source[0],
             priority=DEFAULT_PRIORITY,
             last_packet=datetime.datetime.now(),
             is_active=False,
@@ -67,7 +66,12 @@ class StreamManager:
         if active_index >= len(self.streams) or active_index < 0:
             raise IndexError
         for stream_index, stream in enumerate(self.streams):
-            stream.is_active = stream_index == active_index
+            if stream_index == active_index and stream.is_active == False:
+                logging.info(f"[Stream {stream.client}] I'm the captain now")
+                stream.is_active = True
+            elif stream_index != active_index and stream.is_active == True:
+                logging.info(f"[Stream {stream.client}] kthxbai")
+                stream.is_active = False
 
     def get_active_stream(self) -> Stream:
         for stream in self.streams:
@@ -76,40 +80,48 @@ class StreamManager:
 
     def __sync_clients(self) -> None:
         """Removes stale clients, and sets the is_active property based on stream priority. If no streams remain, clear the LEDs"""
+        logging.debug("__sync_clients()")
+        # No clients to sync.
+        if len(self.streams) == 0:
+            return
+
         cutoff_time = datetime.datetime.now() - datetime.timedelta(seconds=DATA_TIMEOUT_SEC)
         # Remove streams that have timed out
-        self.streams = [stream for stream in self.streams if stream.last_packet > cutoff_time]
+        for stream in self.streams.copy():
+            if stream.last_packet <= cutoff_time:
+                self.streams.remove(stream)
+                logging.info(f"[Stream {stream.client}] Timed out - last packet at {stream.last_packet}")
 
         if len(self.streams) == 0:
-            logging.info("Stopped receiving data - putting display to sleep")
+            logging.info("All streams have stopped - putting display to sleep")
             self.leds.clearScreen()
             return
 
         # Sort the streams by priority, then currently active. This way the current stream stays active, unless a higher priority one joins
         self.streams = sorted(self.streams, key=lambda x: (x.priority, x.is_active), reverse=True)
         self.__set_active_index(active_index=0)
+        logging.debug(f"__sync_clients() => Streams: {self.streams}")
 
-    def __get_next_frame(self) -> None:
-        stream = self.get_active_stream()
-        if stream and len(stream.buffer):
-            return stream.buffer.pop(0)
-        else:
-            return None
-
-    def __process_frame(self, network_frame: NetworkFrame) -> None:
-        if type(network_frame) is ImageFrame:
-            # Take received packet and format for LED panel
-            frame = LedFrame(network_frame.height, network_frame.width)
-            frame.fill_from_bytearray(network_frame.pixels)
-            self.leds.displayFrame(frame)
-        elif type(network_frame) is CommandFrame:
-            if network_frame.command == Commands.SetBrightness:
-                logging.info(f"Setting brightness to {network_frame.value}")
-                self.leds.setBrightness(network_frame.value)
-            elif network_frame.command == Commands.SetPriority:
-                pass
-            else:
-                logging.warning(f"Unkown Command received ({network_frame.command:x})")
+    def __process_buffers(self) -> None:
+        for stream in self.streams:
+            for frame in stream.buffer.copy():
+                if type(frame) is ImageFrame and stream.is_active:
+                    # Take received packet and format for LED panel
+                    ledframe = LedFrame(frame.height, frame.width)
+                    ledframe.fill_from_bytearray(frame.pixels)
+                    self.leds.displayFrame(ledframe)
+                elif type(frame) is CommandFrame:
+                    if frame.command == Commands.SetBrightness:
+                        logging.info(f"[Stream {stream.client}] Setting brightness to {frame.value}")
+                        self.leds.setBrightness(frame.value)
+                    elif frame.command == Commands.SetPriority:
+                        logging.info(f"[Stream {stream.client}] Setting priority to {frame.value}")
+                        stream.priority = frame.value
+                    else:
+                        logging.warning(f"[Stream {stream.client}] Unkown Command received ({frame.command:x})")
+                else:
+                    logging.debug(f"[Stream {stream.client}] Ignoring ImageFrame from inactive stream")
+                stream.buffer.pop(0)
 
     def run(self) -> None:
         try:
@@ -117,9 +129,8 @@ class StreamManager:
             network_frame = self.server.get_frame(frame_pixels)
             self.__ingest_frame(network_frame)
             self.__sync_clients()
-            next_active_frame = self.__get_next_frame()
-            if next_active_frame:
-                self.__process_frame(next_active_frame)
+            logging.debug(f"{len(self.streams)} streams - {self.streams}")
+            self.__process_buffers()
         except NoDataException:
             self.__sync_clients()
         except FrameException as e:
