@@ -3,7 +3,7 @@ from unittest import mock
 import struct
 import select, socket
 
-from ledmatrix import UDPServer, CommandFrame, ImageFrame, Commands
+from ledmatrix import TCPServer, CommandFrame, ImageFrame, Commands
 
 TEST_BRIGHTNESS_CMD = struct.pack(
   "HBB",
@@ -23,9 +23,9 @@ TEST_IMAGE_FRAME = struct.pack(
 class TestReceiveData(unittest.TestCase):
 
   @mock.patch('socket.socket', autospec=True)
-  def test_init_udpserver(self, mock_sock):
-    server = UDPServer(port=1234, timeout=5)
-    self.assertIsInstance(server, UDPServer)
+  def test_init_tcpserver(self, mock_sock):
+    server = TCPServer(port=1234, timeout=5)
+    self.assertIsInstance(server, TCPServer)
     self.assertEqual(server.port, 1234)
     self.assertEqual(server.timeout, 5)
 
@@ -38,7 +38,7 @@ class TestReceiveData(unittest.TestCase):
     mock_getnameinfo.return_value = fake_source
     mock_select.return_value = ([], 0, 0)
 
-    server = UDPServer(port=1234, timeout=5)
+    server = TCPServer(port=1234, timeout=5)
     server.start()
     network_frame = server.get_frame(1)
 
@@ -56,7 +56,7 @@ class TestReceiveData(unittest.TestCase):
     mock_getnameinfo.return_value = fake_source
     mock_select.return_value = ([], 0, 0)
 
-    server = UDPServer(port=1234, timeout=5)
+    server = TCPServer(port=1234, timeout=5)
     server.start()
     network_frame = server.get_frame(1)
 

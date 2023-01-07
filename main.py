@@ -11,7 +11,7 @@ from ledmatrix import *
 
 class LEDServer:
 
-    UDP_PORT = int(os.environ.get("LEDSERVER_PORT", 20304))
+    LEDSERVER_PORT = int(os.environ.get("LEDSERVER_PORT", 20304))
     DATA_TIMEOUT_SEC = 3
 
     def __graceful_exit(self):
@@ -30,21 +30,13 @@ class LEDServer:
             datefmt="%Y-%m-%d %H:%M:%S",
         )
         self.leds = LEDMatrix()
-        self.server = UDPServer(self.UDP_PORT, self.DATA_TIMEOUT_SEC)
-        self.stream_manager = StreamManager(server=self.server, leds=self.leds)
+        self.stream_manager = StreamManager(port=self.LEDSERVER_PORT, timeout=self.DATA_TIMEOUT_SEC, leds=self.leds)
 
     def run(self):
         try:
             self.leds.begin()
         except:
             logging.error("Could not initialise LED Matrix - are you root?")
-            quit(1)
-
-        try:
-            self.server.start()
-            logging.info("Started listening for LED Matrix data on udp://%s:%d" % (socket.gethostname(), self.UDP_PORT))
-        except:
-            logging.error("Could not open UDP socket")
             quit(1)
 
         signal.signal(signal.SIGTERM, self.handle_signal)

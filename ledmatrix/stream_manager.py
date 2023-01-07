@@ -5,8 +5,8 @@ from typing import List
 
 from ledmatrix.ledframe import LedFrame
 from ledmatrix.ledmatrix import LEDMatrix
-from ledmatrix.udpserver import (
-    UDPServer,
+from ledmatrix.tcpserver import (
+    TCPServer,
     ImageFrame,
     CommandFrame,
     Commands,
@@ -31,13 +31,14 @@ class Stream:
 
 class StreamManager:
     streams: List[Stream]
-    server: UDPServer
+    server: TCPServer
     leds: LEDMatrix
 
-    def __init__(self, server: UDPServer, leds: LEDMatrix) -> None:
+    def __init__(self, port: int, timeout: int, leds: LEDMatrix) -> None:
         self.streams = []
-        self.server = server
         self.leds = leds
+        frame_pixels = self.leds.MATRIX_WIDTH * self.leds.MATRIX_HEIGHT
+        self.server = TCPServer(port=port, timeout=timeout, pixels=frame_pixels)
 
     def __ingest_frame(self, frame: NetworkFrame) -> None:
         """Add frame to buffer if found in existing streams"""
@@ -50,7 +51,7 @@ class StreamManager:
                 return
 
         # Not found, create new stream for this client
-        logging.info(f"[Stream {frame.source[0]}] Received frame from new source - udp://{frame.source[0]}:{frame.source[1]}")
+        logging.info(f"[Stream {frame.source[0]}] Received frame from new source - tcp://{frame.source[0]}:{frame.source[1]}")
         new_stream = Stream(
             client=frame.source[0],
             priority=DEFAULT_PRIORITY,
@@ -123,16 +124,14 @@ class StreamManager:
                     logging.debug(f"[Stream {stream.client}] Ignoring ImageFrame from inactive stream")
                 stream.buffer.pop(0)
 
-    def run(self) -> None:
+    def handle_packet(self, network_frame) -> None:
         try:
-            frame_pixels = self.leds.MATRIX_WIDTH * self.leds.MATRIX_HEIGHT
-            network_frame = self.server.get_frame(frame_pixels)
             self.__ingest_frame(network_frame)
             self.__sync_clients()
             logging.debug(f"{len(self.streams)} streams - {self.streams}")
             self.__process_buffers()
-        except NoDataException:
-            self.__sync_clients()
         except FrameException as e:
             logging.error("Error while processing: %s" % e)
-            pass
+
+    def run(self) -> None:
+        self.server.run(handler=self.handle_packet, service_actions=self.__sync_clients)
