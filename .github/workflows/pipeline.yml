@@ -17,4 +17,4 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Build Container & Test
-        run: docker-compose --profile test build test
+        run: docker-compose run test

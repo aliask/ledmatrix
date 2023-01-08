@@ -10,11 +10,11 @@ from typing import Callable
 from ledmatrix.network_frame import NetworkFrame, parse_frame
 
 
-class ThreadedUDPServer(socketserver.ThreadingMixIn, socketserver.UDPServer):
+class ThreadedTCPServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
     pass
 
 
-class UDPServer:
+class TCPServer:
 
     ALL_IFACES = "0.0.0.0"
 
@@ -22,10 +22,17 @@ class UDPServer:
         self.port = port
 
     def run(self, handler: Callable[[NetworkFrame], None]):
-        """Sets the request handling callback function, and starts the UDP server in a new thread"""
+        """Sets the request handling callback function, and starts the TCP server in a new thread"""
         class PacketHandler(socketserver.BaseRequestHandler):
             def handle(self):
-                data = self.request[0]
+                # Reassemble TCP packets
+                data = b""
+                while True:
+                    new_data = self.request.recv(1024)
+                    if not new_data:
+                        break
+                    data += new_data
+
                 if not data:
                     return
 
@@ -39,8 +46,8 @@ class UDPServer:
                 parsed.source = addr
                 handler(parsed)
 
-        logging.info(f"Starting UDP Server on {self.ALL_IFACES}:{self.port}")
-        server = ThreadedUDPServer((self.ALL_IFACES, self.port), PacketHandler)
+        logging.info(f"Starting TCP Server on {self.ALL_IFACES}:{self.port}")
+        server = ThreadedTCPServer((self.ALL_IFACES, self.port), PacketHandler)
         server_thread = threading.Thread(target=server.serve_forever)
         server_thread.daemon = True
         server_thread.start()

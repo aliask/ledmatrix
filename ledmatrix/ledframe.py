@@ -6,6 +6,7 @@ import struct
 
 from rpi_ws281x import Color
 
+
 def grouper(n, iterable, fillvalue=None):
     "grouper(3, 'ABCDEFG', 'x') --> ABC DEF Gxx"
     args = [iter(iterable)] * n
@@ -14,13 +15,14 @@ def grouper(n, iterable, fillvalue=None):
 
 @dataclass
 class LedFrame:
-  height: int
-  width: int
-  pixels: list = field(default_factory=list)
+    height: int
+    width: int
+    pixels: list = field(default_factory=list)
 
-  def fill_from_bytearray(self, pixeldata: bytearray):
-    self.pixels = []
-    pixel_list = list(struct.unpack("B" * self.height * self.width * 4, pixeldata))
-    for pixel in grouper(4, pixel_list):
-      (r, g, b, a) = pixel
-      self.pixels.append(Color(r, g, b))
+    def fill_from_bytes(self, pixeldata: bytes):
+        self.pixels = []
+        pixel_list = list(struct.unpack("B" * self.height * self.width * 4, pixeldata))
+        for pixel in grouper(4, pixel_list):
+            (r, g, b, a) = pixel
+            self.pixels.append(Color(r, g, b))
+

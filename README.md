@@ -63,5 +63,6 @@ This will take a while, depending on which model you have.
 
 https://github.com/aliask/radmat - Stream the BOM weather radar loop
 https://github.com/aliask/ScreenCast - Stream a portion of your screen from a Windows machine
+https://github.com/aliask/gifstreamer - Stream a GIF
 
 https://github.com/rpi-ws281x/rpi-ws281x-python - Library to interface to the LEDs
