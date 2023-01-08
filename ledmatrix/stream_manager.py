@@ -1,6 +1,8 @@
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 import datetime
 import logging
+import threading
+import time
 from typing import List, Optional
 
 from ledmatrix.ledframe import LedFrame
@@ -33,11 +35,13 @@ class StreamManager:
     udp_server: UDPServer
     leds: LEDMatrix
     timeout: int
+    frame_lock: threading.Lock
 
     def __init__(self, port: int, timeout: int, leds: LEDMatrix) -> None:
         self.streams = []
         self.leds = leds
         self.timeout = timeout
+        self.frame_lock = threading.Lock()
         self.tcp_server = TCPServer(port=port)
         self.udp_server = UDPServer(port=port)
 
@@ -120,12 +124,18 @@ class StreamManager:
 
     def handle_packet(self, network_frame: NetworkFrame) -> None:
         try:
-            self.__ingest_frame(network_frame)
-            self.__sync_clients()
-            logging.debug(f"{len(self.streams)} streams - {self.streams}")
+            with self.frame_lock:
+                self.__ingest_frame(network_frame)
         except FrameException as e:
             logging.error("Error while processing: %s" % e)
 
+        self.__sync_clients()
+        logging.debug(f"{len(self.streams)} streams - {self.streams}")
+
     def run(self) -> None:
-        self.tcp_server.run(handler=self.handle_packet, service_actions=self.__sync_clients)
-        self.udp_server.run(handler=self.handle_packet, service_actions=self.__sync_clients)
+        self.tcp_server.run(handler=self.handle_packet)
+        self.udp_server.run(handler=self.handle_packet)
+
+        while True:
+            self.__sync_clients()
+            time.sleep(1)

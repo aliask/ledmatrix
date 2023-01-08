@@ -21,7 +21,7 @@ class UDPServer:
     def __init__(self, port: int) -> None:
         self.port = port
 
-    def run(self, handler: Callable[[NetworkFrame], None], service_actions: Callable[[], None]):
+    def run(self, handler: Callable[[NetworkFrame], None]):
         class PacketHandler(socketserver.BaseRequestHandler):
             def handle(pkself):
                 data = pkself.request.recv(10240)
@@ -40,7 +40,6 @@ class UDPServer:
 
         logging.info(f"Starting UDP Server on {self.ALL_IFACES}:{self.port}")
         server = ThreadedUDPServer((self.ALL_IFACES, self.port), PacketHandler)
-        server.service_actions = service_actions
         server_thread = threading.Thread(target=server.serve_forever)
         server_thread.daemon = True
         server_thread.start()

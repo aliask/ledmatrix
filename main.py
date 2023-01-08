@@ -49,10 +49,6 @@ class LEDServer:
 
         self.stream_manager.run()
 
-        # Wait forever - servers run asynchronously
-        while True:
-            pass
-
 
 if __name__ == "__main__":
     app = LEDServer()
