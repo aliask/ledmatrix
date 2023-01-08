@@ -19,7 +19,7 @@ class LedFrame:
     width: int
     pixels: list = field(default_factory=list)
 
-    def fill_from_bytearray(self, pixeldata: bytearray):
+    def fill_from_bytes(self, pixeldata: bytes):
         self.pixels = []
         pixel_list = list(struct.unpack("B" * self.height * self.width * 4, pixeldata))
         for pixel in grouper(4, pixel_list):

@@ -4,7 +4,6 @@
 import os
 import logging
 import signal
-import socket
 
 from ledmatrix import *
 
@@ -35,9 +34,9 @@ class LEDServer:
     def run(self):
         try:
             self.leds.begin()
-        except:
-            logging.error("Could not initialise LED Matrix - are you root?")
-            quit(1)
+        except Exception as e:
+            logging.error(f"Could not initialise LED Matrix - are you root? ({e})")
+            exit(1)
 
         signal.signal(signal.SIGTERM, self.handle_signal)
         signal.signal(signal.SIGINT, self.handle_signal)
@@ -48,8 +47,11 @@ class LEDServer:
         except:
             logging.warning("Couldn't load image")
 
+        self.stream_manager.run()
+
+        # Wait forever - servers run asynchronously
         while True:
-            self.stream_manager.run()
+            pass
 
 
 if __name__ == "__main__":
