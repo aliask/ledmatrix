@@ -22,12 +22,13 @@ class TCPServer:
         self.port = port
 
     def run(self, handler: Callable[[NetworkFrame], None]):
+        """Sets the request handling callback function, and starts the TCP server in a new thread"""
         class PacketHandler(socketserver.BaseRequestHandler):
-            def handle(pkself):
+            def handle(self):
                 # Reassemble TCP packets
                 data = b""
                 while True:
-                    new_data = pkself.request.recv(1024)
+                    new_data = self.request.recv(1024)
                     if not new_data:
                         break
                     data += new_data
@@ -35,9 +36,9 @@ class TCPServer:
                 if not data:
                     return
 
-                addr = pkself.client_address
+                addr = self.client_address
                 try:
-                    addr = socket.getnameinfo(pkself.client_address, 0)
+                    addr = socket.getnameinfo(self.client_address, 0)
                 except socket.gaierror:
                     logging.warn("Error during hostname lookup for %s" % addr[0])
 

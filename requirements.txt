@@ -1,3 +1,2 @@
-olefile==0.46
-Pillow==8.3.2
-rpi-ws281x==4.3.0
+Pillow==9.4.0
+rpi-ws281x==4.3.3

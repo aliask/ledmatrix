@@ -33,7 +33,7 @@ class NetworkFrame(ABC):
 class CommandFrame(NetworkFrame):
     command: Command
     value: int
-    IDENT = 0x4321
+    IDENT: int = field(repr=False, init=False, default=0x4321)
 
     def as_binary(self):
         return struct.pack("HBB", self.IDENT, self.command, self.value)
@@ -61,9 +61,9 @@ class ImageFrame(NetworkFrame):
     height: int
     width: int
     pixels: bytes = field(repr=False)
-    IDENT = 0x1234
-    PIXEL_SIZE: int = 4
-    HEADER_SIZE: int = 8
+    IDENT: int = field(repr=False, init=False, default=0x1234)
+    PIXEL_SIZE: int = field(repr=False, init=False, default=4)
+    HEADER_SIZE: int = field(repr=False, init=False, default=8)
 
     @property
     def header(self) -> bytes:

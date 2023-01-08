@@ -22,15 +22,16 @@ class UDPServer:
         self.port = port
 
     def run(self, handler: Callable[[NetworkFrame], None]):
+        """Sets the request handling callback function, and starts the UDP server in a new thread"""
         class PacketHandler(socketserver.BaseRequestHandler):
-            def handle(pkself):
-                data = pkself.request.recv(10240)
+            def handle(self):
+                data = self.request[0]
                 if not data:
                     return
 
-                addr = pkself.client_address
+                addr = self.client_address
                 try:
-                    addr = socket.getnameinfo(pkself.client_address, 0)
+                    addr = socket.getnameinfo(self.client_address, 0)
                 except socket.gaierror:
                     logging.warn("Error during hostname lookup for %s" % addr[0])
 
