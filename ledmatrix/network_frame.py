@@ -36,7 +36,7 @@ class CommandFrame(NetworkFrame):
     IDENT: int = field(repr=False, init=False, default=0x4321)
 
     def as_binary(self):
-        return struct.pack("HBB", self.IDENT, self.command, self.value)
+        return struct.pack("HBB", self.IDENT, self.command.value, self.value)
 
     @classmethod
     def from_bytes(cls, source_bytes: bytes):
@@ -82,10 +82,15 @@ class ImageFrame(NetworkFrame):
         expected_pixeldata_size = height * width * cls.PIXEL_SIZE
         if pixeldata_size != expected_pixeldata_size:
             raise FrameException(
-                f"Cannot parse image frame, pixeldata length mismatch - expected {expected_pixeldata_size} bytes but got {pixeldata_size}"
+                f"Cannot parse image frame, pixeldata length mismatch - expected {expected_pixeldata_size} bytes but header states {pixeldata_size}"
+            )
+        pixeldata = source_bytes[cls.HEADER_SIZE :]
+        if len(pixeldata) != expected_pixeldata_size:
+            raise FrameException(
+                f"Cannot parse image frame, pixeldata length mismatch - expected {expected_pixeldata_size} bytes but got {len(pixeldata)} bytes in Frame"
             )
 
-        return cls(width=width, height=height, pixels=source_bytes[cls.HEADER_SIZE :])
+        return cls(width=width, height=height, pixels=pixeldata)
 
 
 def parse_frame(source_bytes: bytes) -> NetworkFrame:

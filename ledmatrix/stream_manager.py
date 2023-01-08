@@ -23,7 +23,7 @@ DEFAULT_PRIORITY = 5
 
 @dataclass
 class Stream:
-    client: tuple
+    client: str
     priority: int
     last_packet: datetime.datetime
     is_active: bool
@@ -98,12 +98,12 @@ class StreamManager:
             if stream.is_active:
                 return stream
 
-    def __sync_clients(self) -> None:
+    def sync_clients(self) -> None:
         """Removes stale clients, and sets the is_active property based on stream priority. If no streams remain, clear the LEDs"""
         # No clients to sync.
         if len(self.streams) == 0:
             return
-        logging.debug("__sync_clients()")
+        logging.debug("sync_clients()")
 
         cutoff_time = datetime.datetime.now() - datetime.timedelta(seconds=self.timeout)
         # Remove streams that have timed out
@@ -120,7 +120,7 @@ class StreamManager:
         # Sort the streams by priority, then currently active. This way the current stream stays active, unless a higher priority one joins
         self.streams = sorted(self.streams, key=lambda x: (x.priority, x.is_active), reverse=True)
         self.__set_active_index(active_index=0)
-        logging.debug(f"__sync_clients() => Streams: {self.streams}")
+        logging.debug(f"sync_clients() => Streams: {self.streams}")
 
     def handle_packet(self, network_frame: NetworkFrame) -> None:
         try:
@@ -129,7 +129,7 @@ class StreamManager:
         except FrameException as e:
             logging.error("Error while processing: %s" % e)
 
-        self.__sync_clients()
+        self.sync_clients()
         logging.debug(f"{len(self.streams)} streams - {self.streams}")
 
     def run(self) -> None:
@@ -137,5 +137,5 @@ class StreamManager:
         self.udp_server.run(handler=self.handle_packet)
 
         while True:
-            self.__sync_clients()
+            self.sync_clients()
             time.sleep(1)
