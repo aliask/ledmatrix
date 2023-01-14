@@ -62,15 +62,13 @@ class TestNetworkFrame(unittest.TestCase):
         blob = bytes.fromhex("3412010002000800ffffffffffffffffff")
         self.assertRaises(FrameException, parse_frame, blob)
 
-    def test_image_frame_as_binary(self):
+    def test_image_frame_cast_to_bytes(self):
         test_frame = ImageFrame(height=1, width=2, pixels=b"\xff\x00\xff\xff"*2)
-        binary = test_frame.as_binary()
-        self.assertEqual(binary, TEST_IMAGE_FRAME)
+        self.assertEqual(bytes(test_frame), TEST_IMAGE_FRAME)
 
-    def test_command_frame_as_binary(self):
+    def test_command_frame_cast_to_bytes(self):
         test_frame = CommandFrame(command=Command.SetBrightness, value=15)
-        binary = test_frame.as_binary()
-        self.assertEqual(binary, bytes.fromhex("2143000f"))
+        self.assertEqual(bytes(test_frame), bytes.fromhex("2143000f"))
 
 if __name__ == "__main__":
     unittest.main()

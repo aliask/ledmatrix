@@ -20,7 +20,7 @@ class NetworkFrame(ABC):
     IDENT = 0x0000
 
     @abstractmethod
-    def as_binary(self):
+    def __bytes__(self):
         pass
 
     @classmethod
@@ -35,7 +35,7 @@ class CommandFrame(NetworkFrame):
     value: int
     IDENT: int = field(repr=False, init=False, default=0x4321)
 
-    def as_binary(self):
+    def __bytes__(self):
         return struct.pack("HBB", self.IDENT, self.command.value, self.value)
 
     @classmethod
@@ -69,7 +69,7 @@ class ImageFrame(NetworkFrame):
     def header(self) -> bytes:
         return struct.pack("HHHH", self.IDENT, self.height, self.width, len(self.pixels))
 
-    def as_binary(self):
+    def __bytes__(self):
         return self.header + self.pixels
 
     @classmethod
