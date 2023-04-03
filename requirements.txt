@@ -1,2 +1,2 @@
-Pillow==9.4.0
+Pillow==9.5.0
 rpi-ws281x==4.3.4
