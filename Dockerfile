@@ -1,10 +1,11 @@
-FROM python:3.10-alpine as base
+FROM python:3.10-slim as base
 
 # Install Build dependencies for rpi_ws281x and Pillow
-RUN apk --no-cache add python3-dev gcc libc-dev \
-  tiff-dev jpeg-dev openjpeg-dev zlib-dev freetype-dev lcms2-dev \
-  libwebp-dev tcl-dev tk-dev harfbuzz-dev fribidi-dev libimagequant-dev \
-  libxcb-dev libpng-dev
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        build-essential libffi-dev libxml2-dev libxslt1-dev \
+        libtiff-dev libjpeg62-turbo-dev zlib1g-dev libfreetype6-dev \
+        liblcms2-dev libwebp-dev \
+    && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
